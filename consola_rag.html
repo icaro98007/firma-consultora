@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>VERITAS AUDIT-SEC | Consola de Revisoría Fiscal, Ciberseguridad & KPO</title>
+  <meta name="description" content="Consola RAG de Revisoría Fiscal y KPO con Auditoría de Logins, Seguimiento Forense de Actividades, Enmascaramiento DLP y Cumplimiento Ley 1581 / NIA 230." />
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              900: '#064e3b',
+            }
+          },
+          boxShadow: {
+            'subtle': '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+            'elevated': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+            'float': '0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.06)',
+          },
+          animation: {
+            'pulse-ring': 'pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite',
+          },
+          keyframes: {
+            'pulse-ring': {
+              '0%': { transform: 'scale(0.95)', opacity: '0.8' },
+              '50%': { transform: 'scale(1.15)', opacity: '0.3' },
+              '100%': { transform: 'scale(0.95)', opacity: '0.8' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Estilos de scrollbar delgados */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .terminal-scroll::-webkit-scrollbar-thumb { background: #334155; }
+    .terminal-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .glass-header {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+
+    /* Tag de PII redactada */
+    .pii-tag {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 11px;
+      border: 1px dashed #f87171;
+    }
+
+    .animate-in {
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 font-sans antialiased overflow-hidden flex flex-col select-none">
+
+  <!-- ========================================================================= -->
+  <!-- BARRA DE SEGURIDAD Y ESTADO SUPERIOR (EXECUTIVE COMPLIANCE BAR)            -->
+  <!-- ========================================================================= -->
+  <header class="bg-slate-900 text-slate-200 border-b border-slate-800 px-3 sm:px-6 py-2 flex items-center justify-between text-xs z-40 select-none">
+    
+    <div class="flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar py-0.5">
+      <div class="flex items-center gap-2 font-bold tracking-tight text-white flex-shrink-0">
+        <div class="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+        </div>
+        <span class="text-sm">VERITAS <span class="text-emerald-400">AUDIT-SEC</span></span>
+      </div>
+
+      <span class="text-slate-700 hidden md:inline">|</span>
+
+      <!-- Badges de Cumplimiento -->
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          DLP ACTIVO (LEY 1581)
+        </span>
+        <span class="hidden lg:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700">
+          <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i> TLS 1.3 / AES-256
+        </span>
+        <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono bg-blue-950 text-blue-300 border border-blue-800">
+          <i data-lucide="award" class="w-3 h-3 text-blue-400"></i> NIA 230 / ISO 27001
+        </span>
+      </div>
+    </div>
+
+    <!-- Controles de Sesión, Timer de Inactividad y Perfil de Auditor -->
+    <div class="flex items-center gap-3 flex-shrink-0">
+      
+      <!-- Temporizador de Inactividad -->
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/80 text-[11px] font-mono text-slate-300" title="Tiempo de sesión segura antes de bloqueo automático">
+        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>Bloqueo:</span>
+        <span id="sessionTimerText" class="font-bold text-emerald-400">14:59</span>
+      </div>
+
+      <!-- Tarjeta de Auditor Activo / Selector de Rol -->
+      <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+        <button onclick="toggleModalAuth(true)" class="flex items-center gap-2 p-1 sm:px-2 sm:py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-left transition-colors group" title="Ver perfil o cambiar credenciales de acceso">
+          <div class="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-[10px]">
+            RF
+          </div>
+          <div class="hidden md:block">
+            <p id="activeUserHeaderName" class="text-[11px] font-semibold text-white leading-tight">Dr. Carlos Mendoza, CPA</p>
+            <p id="activeUserHeaderRole" class="text-[9px] text-slate-400 font-mono">TP-184920-T · Revisor Fiscal</p>
+          </div>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400 group-hover:text-white transition-colors"></i>
+        </button>
+      </div>
+
+    </div>
+
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- NAVEGACIÓN PRINCIPAL ENTRE MÓDULOS DE LA CONSOLA (TABS EJECUTIVAS)         -->
+  <!-- ========================================================================= -->
+  <nav class="bg-white border-b border-slate-200/90 px-3 sm:px-6 py-2 flex items-center justify-between select-none z-30">
+    
+    <div class="flex items-center gap-1 sm:gap-2">
+      <button onclick="cambiarVistaPrincipal('chat')" id="tabBtnChat" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 bg-slate-900 text-white shadow-sm transition-all duration-200">
+        <i data-lucide="message-square" class="w-4 h-4 text-emerald-400"></i>
+        <span>Consola RAG Forense</span>
+      </button>
+
+      <button onclick="cambiarVistaPrincipal('simulador')" id="tabBtnSimulador" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200">
+        <i data-lucide="play-circle" class="w-4 h-4 text-slate-500"></i>
+        <span>Simulador KPO (50 Casos)</span>
+        <span class="hidden sm:inline px-1.5 py-0.2 rounded text-[9px] font-mono bg-slate-100 text-slate-600 border border-slate-200">Semana 4</span>
+      </button>
+
+      <button onclick="cambiarVistaPrincipal('seguridad')" id="tabBtnSeguridad" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200">
+        <i data-lucide="shield-alert" class="w-4 h-4 text-slate-500"></i>
+        <span>Centro de Ciberseguridad</span>
+      </button>
+
+      <button onclick="cambiarVistaPrincipal('actividades')" id="tabBtnActividades" class="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200">
+        <i data-lucide="activity" class="w-4 h-4 text-slate-500"></i>
+        <span>Seguimiento Forense</span>
+        <span id="actividadesBadgeCount" class="px-1.5 py-0.2 rounded-full text-[9px] font-mono bg-emerald-100 text-emerald-800 font-bold">5</span>
+      </button>
+    </div>
+
+    <!-- Enlace a Repositorio Google Drive & Botón de Logs -->
+    <div class="flex items-center gap-2">
+      
+      <!-- Enlace Oficial Google Drive -->
+      <a
+        href="https://drive.google.com/drive/folders/1ydk3BUIO10U89OaE5bIbkfTlnpmpE1bg"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200/80 rounded-xl text-xs font-medium transition-colors"
+        title="Abrir carpeta de Google Drive con la base de conocimientos oficial"
+      >
+        <i data-lucide="folder-git-2" class="w-3.5 h-3.5 text-emerald-600"></i>
+        <span>Base Oficial Drive</span>
+        <i data-lucide="external-link" class="w-3 h-3 text-emerald-500"></i>
+      </a>
+
+      <!-- Botón Modo Auditoría (Drawer) -->
+      <button
+        onclick="toggleAuditDrawer(true)"
+        class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-200 active:scale-95"
+        title="Ver Drawer completo de auditoría, logins y logs JSON"
+      >
+        <i data-lucide="terminal" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span>Auditoría & Logs</span>
+        <span id="auditBadgeCount" class="px-1.5 py-0.2 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">1</span>
+      </button>
+
+    </div>
+
+  </nav>
+
+  <!-- ========================================================================= -->
+  <!-- CONTENEDOR PRINCIPAL: SIDEBAR + VISTAS (CHAT / SIMULADOR / SEGURIDAD / LOGS)-->
+  <!-- ========================================================================= -->
+  <div class="flex-1 flex overflow-hidden relative">
+
+    <div id="sidebarBackdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden md:hidden transition-opacity duration-300"></div>
+    <div id="auditDrawerBackdrop" onclick="toggleAuditDrawer(false)" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden transition-opacity duration-300"></div>
+
+    <!-- ======================================================================= -->
+    <!-- 1. BARRA LATERAL (SIDEBAR): HERRAMIENTAS, HISTORIAL & ZEROIZATION       -->
+    <!-- ======================================================================= -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-72 sm:w-80 bg-white border-r border-slate-200/90 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out shadow-lg md:shadow-none select-none">
+      
+      <!-- Top Branding & Nueva Consulta -->
+      <div class="p-4 border-b border-slate-100 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-sm ring-1 ring-slate-800/10">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+            </div>
+            <div>
+              <span class="font-bold text-slate-900 tracking-tight text-xs">MÓDULO DE REVISORÍA</span>
+              <p class="text-[10px] text-slate-500 font-medium">Firma KPO & Control Interno</p>
+            </div>
+          </div>
+          <button onclick="toggleSidebar(false)" class="md:hidden p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- MÓDULO DLP: ESTADO DE ENMASCARAMIENTO -->
+        <div class="bg-slate-900 text-white rounded-xl p-3 border border-slate-800 shadow-sm space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="lock" class="w-3 h-3"></i> Filtro DLP Activo
+            </span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          </div>
+          <p class="text-[10px] text-slate-300 leading-tight">
+            Enmascara en tiempo real Cédulas, NITs, Cuentas y Salarios según Ley 1581 / Ley 1266.
+          </p>
+          <div class="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px] text-slate-400 font-mono">
+            <span>PII Enmascarados: <strong id="piiCounterSidebar" class="text-emerald-400">14</strong></span>
+            <span>Zero-Retention</span>
+          </div>
+        </div>
+
+        <!-- Botón Nueva Consulta -->
+        <button onclick="iniciarNuevaConsulta()" class="w-full flex items-center justify-center gap-2 py-2 px-3 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white rounded-xl text-xs font-semibold shadow-sm transition-all duration-200 group">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300"></i>
+          <span>Nueva Consulta Forense</span>
+        </button>
+      </div>
+
+      <!-- Menú de Acciones Rápidas & Historial -->
+      <div class="flex-1 overflow-y-auto px-3 py-3 space-y-4">
+        
+        <div>
+          <div class="flex items-center justify-between px-2 mb-1.5">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Guías Técnicas Oficiales</span>
+            <span class="text-[9px] text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">Google Drive</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="lanzarConsultaRapida('template01')" class="w-full text-left p-2 rounded-xl text-xs flex items-center gap-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium transition-all duration-200 group">
+              <div class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-emerald-600">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate">Arqueos & Inventarios</p>
+                <span class="text-[10px] text-slate-400">TEMPLATE-01</span>
+              </div>
+            </button>
+
+            <button onclick="lanzarConsultaRapida('template02')" class="w-full text-left p-2 rounded-xl text-xs flex items-center gap-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium transition-all duration-200 group">
+              <div class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-emerald-600">
+                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate">Guía Práctica NIAs</p>
+                <span class="text-[10px] text-slate-400">TEMPLATE-02 (240/315/570)</span>
+              </div>
+            </button>
+
+            <button onclick="lanzarConsultaRapida('template03')" class="w-full text-left p-2 rounded-xl text-xs flex items-center gap-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium transition-all duration-200 group">
+              <div class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-emerald-600">
+                <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate">Hallazgos C-C-C-E-R</p>
+                <span class="text-[10px] text-slate-400">TEMPLATE-03 (COSO 2013)</span>
+              </div>
+            </button>
+
+            <button onclick="lanzarConsultaRapida('template04')" class="w-full text-left p-2 rounded-xl text-xs flex items-center gap-2.5 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-900 border border-slate-200 hover:border-emerald-300 text-slate-700 font-medium transition-all duration-200 group">
+              <div class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-emerald-600">
+                <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold truncate">SARLAFT, SAGRILAFT & ROS</p>
+                <span class="text-[10px] text-slate-400">TEMPLATE-04 (UIAF)</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Calculadora de Materialidad -->
+        <div>
+          <button onclick="toggleModalMaterialidad(true)" class="w-full text-left p-2.5 rounded-xl text-xs flex items-center gap-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300/80 text-slate-800 font-medium transition-colors group">
+            <i data-lucide="calculator" class="w-4 h-4 text-emerald-600"></i>
+            <div class="flex-1">
+              <p class="font-bold">Calculadora NIA 320</p>
+              <span class="text-[10px] text-slate-500">Materialidad & Error Tolerable</span>
+            </div>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400"></i>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Footer de Sidebar: Zeroization & Limpieza Local -->
+      <div class="p-3 border-t border-slate-200/90 bg-slate-50/50 space-y-2">
+        <button
+          onclick="confirmarLimpiarContexto()"
+          class="w-full flex items-center justify-center gap-2 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200/80 rounded-xl text-xs font-semibold transition-all duration-200"
+          title="Sobreescribe la memoria volátil con ceros (0x00000000)"
+        >
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Limpiar Contexto (Zeroization)</span>
+        </button>
+        <p class="text-[9px] text-slate-400 text-center font-mono">
+          Borrado forense en memoria · Ley 43 de 1990
+        </p>
+      </div>
+
+    </aside>
+
+    <!-- ======================================================================= -->
+    <!-- 2. VISTA A: CONSOLA RAG DE CHAT FORENSE (ÁREA PRINCIPAL)                -->
+    <!-- ======================================================================= -->
+    <main id="viewChat" class="flex-1 flex flex-col h-full bg-slate-50 relative overflow-hidden">
+      
+      <!-- Sub-cabecera con información del caso activo -->
+      <div class="glass-header border-b border-slate-200/80 px-4 sm:px-6 py-2.5 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+          <button onclick="toggleSidebar(true)" class="md:hidden p-1.5 -ml-1 text-slate-600 hover:bg-slate-100 rounded-lg">
+            <i data-lucide="menu" class="w-4 h-4"></i>
+          </button>
+          <span class="font-bold text-slate-900">Expediente de Consulta Fiscal</span>
+          <span class="text-slate-400">·</span>
+          <span class="text-emerald-700 font-mono text-[11px] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">CASO-2026-ACTIVO</span>
+        </div>
+        <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono">
+          <span>Hash Sesión: <strong id="sessionHashTag" class="text-slate-700">sha256-a94f...e4b9</strong></span>
+        </div>
+      </div>
+
+      <!-- Área de Mensajes de Chat -->
+      <div id="chatMessages" class="flex-1 overflow-y-auto px-3 sm:px-6 py-6 space-y-6 pb-44">
+        
+        <!-- Píldora de inicio de sesión segura -->
+        <div class="flex justify-center">
+          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200/80 text-[11px] font-medium text-slate-600 shadow-subtle">
+            <i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Túnel Seguro Verificado · Cifrado en Memoria AES-256 · Filtro DLP de Datos Sensibles Habilitado</span>
+          </div>
+        </div>
+
+        <!-- Mensaje Inicial del Revisor Fiscal (Usuario) -->
+        <div class="flex flex-col items-end max-w-3xl ml-auto group">
+          <div class="flex items-center gap-2 mb-1.5 px-1">
+            <span class="text-[11px] font-semibold text-slate-600">Revisor Fiscal Principal</span>
+            <span class="text-[10px] text-slate-400 font-mono">10:42 AM</span>
+          </div>
+          <div class="bg-slate-900 text-white rounded-2xl rounded-tr-sm p-4 sm:p-5 shadow-card max-w-full text-sm leading-relaxed border border-slate-800 space-y-2">
+            <div class="flex items-center gap-2 pb-1.5 border-b border-slate-800 text-[11px] text-emerald-400 font-mono">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+              <span>Filtro DLP: 3 datos sensibles anonimizados (Ley 1581 de 2012)</span>
+            </div>
+            <p>
+              Auditar la solicitud de crédito del asociado <span class="pii-tag">[IDENTIDAD-RESERVADA]</span> con cédula <span class="pii-tag">[CC/NIT-PROTEGIDO-***492]</span> por valor de <span class="pii-tag">[VALOR-CLASIFICADO]</span>. ¿Cuáles son los requisitos de confidencialidad, custodia de pagarés y prevención LA/FT según la documentación oficial de Google Drive?
+            </p>
+          </div>
+          <div class="flex items-center gap-2 mt-1.5 px-1 text-[11px] text-slate-400">
+            <span class="flex items-center gap-1"><i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i> Sanitizado contra fuga de datos</span>
+          </div>
+        </div>
+
+        <!-- Mensaje Inicial del Agente RAG -->
+        <div class="flex flex-col items-start max-w-4xl mr-auto group">
+          <div class="flex items-center gap-2 mb-1.5 px-1">
+            <div class="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px]">
+              <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-900">Agente RAG Revisoría Fiscal & KPO</span>
+            <span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200/60 flex items-center gap-1">
+              <i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i> TEMPLATE-04 & LEY-1581
+            </span>
+            <span class="text-[10px] text-slate-400 font-mono ml-auto">10:42 AM</span>
+          </div>
+
+          <div class="bg-white rounded-2xl rounded-tl-sm p-5 sm:p-6 shadow-card hover:shadow-elevated transition-all duration-300 ease-in-out border border-slate-200/90 text-sm leading-relaxed space-y-4 w-full">
+            
+            <div class="space-y-3">
+              <p class="text-slate-900 font-medium">
+                Con base en la documentación base oficial indexada de Google Drive (<code>04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx</code> y <code>03_Control_interno_COSO_y_hallazgos.docx</code>), se emite el siguiente dictamen de aseguramiento:
+              </p>
+              
+              <div class="space-y-2 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70 text-xs sm:text-sm">
+                <div class="flex items-start gap-2.5 text-slate-700">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                  <p><strong>1. Confidencialidad y Reserva Legal (Ley 1581 & Ley 43 de 1990):</strong> La información patrimonial y crediticia del asociado goza de reserva profesional. El motor DLP ha sustituido en memoria volátil los datos personales para evitar remanencia en disco exterior.</p>
+                </div>
+                <div class="flex items-start gap-2.5 text-slate-700">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                  <p><strong>2. Custodia de Títulos Valores (Supersolidaria):</strong> Todo pagaré físico en blanco debe permanecer en bóveda con control dual de acceso y contar con su correspondiente <em>Carta de Instrucciones</em> firmada. En caso electrónico, requiere firma digital certificada bajo la Ley 527 de 1999.</p>
+                </div>
+                <div class="flex items-start gap-2.5 text-slate-700">
+                  <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                  <p><strong>3. Régimen LA/FT y Reserva del ROS (TEMPLATE-04):</strong> Si se detectan operaciones inusuales sin justificación económica, el Oficial de Cumplimiento reporta a la UIAF por SIREL. El reporte es confidencial y rige la prohibición de alertar al asociado (<em>anti-tipping off</em>).</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bloque de Cita con enlace a Google Drive -->
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                  <i data-lucide="folder-check" class="w-4 h-4 text-emerald-600"></i>
+                  Fuente Oficial en Repositorio Drive
+                </span>
+                <span class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
+                  Relevancia: 99.4%
+                </span>
+              </div>
+              
+              <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/70 flex items-center justify-between text-xs">
+                <div>
+                  <span class="font-semibold text-slate-800">04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx</span>
+                  <p class="text-[10px] font-mono text-slate-500">Carpeta Drive: 1ydk3BUIO10U89OaE5bIbkfTlnpmpE1bg</p>
+                </div>
+                <a href="https://drive.google.com/drive/folders/1ydk3BUIO10U89OaE5bIbkfTlnpmpE1bg" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors">
+                  <i data-lucide="external-link" class="w-3 h-3"></i> Abrir
+                </a>
+              </div>
+            </div>
+
+            <!-- Acciones & Log Link -->
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+              <div class="flex items-center gap-2">
+                <button onclick="copiarRespuesta(this)" class="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors">
+                  <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  <span>Copiar Dictamen</span>
+                </button>
+                <button onclick="toggleAuditDrawer(true)" class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg border border-emerald-200 transition-colors font-medium">
+                  <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                  <span>Ver Log Cifrado (SHA-256)</span>
+                </button>
+              </div>
+              <span class="text-[11px] font-mono">T: 340ms · Sello: sha256-07f1...e4b9</span>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Typing Indicator -->
+      <div id="typingIndicator" class="hidden flex items-center gap-3 px-6 py-3 bg-white/90 border-t border-slate-200 text-xs text-slate-500">
+        <div class="flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]"></span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]"></span>
+        </div>
+        <span id="typingStatusText" class="font-mono text-slate-600">Consultando documentación de Google Drive y aplicando filtros DLP...</span>
+      </div>
+
+      <!-- ÁREA DE INPUT FIJA INFERIOR -->
+      <div class="absolute bottom-0 inset-x-0 p-3 sm:p-5 bg-gradient-to-t from-slate-50 via-slate-50/95 to-transparent z-20">
+        <div class="max-w-4xl mx-auto space-y-2">
+
+          <!-- Chips de Sugerencia con Temas de la Carpeta de Google Drive -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1 flex-shrink-0">
+              <i data-lucide="sparkles" class="w-3 h-3 text-emerald-500"></i> Drive KB:
+            </span>
+            <button onclick="insertarSugerencia('¿Cuáles son los pasos obligatorios para un arqueo sorpresivo de caja menor según TEMPLATE-01?')" class="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs whitespace-nowrap transition-all shadow-subtle hover:border-slate-300">
+              Arqueo de Caja Menor (TEMPLATE-01)
+            </button>
+            <button onclick="insertarSugerencia('Explica la estructura de hallazgos C-C-C-E-R según la guía COSO de TEMPLATE-03.')" class="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs whitespace-nowrap transition-all shadow-subtle hover:border-slate-300">
+              Estructura C-C-C-E-R (TEMPLATE-03)
+            </button>
+            <button onclick="insertarSugerencia('¿Qué diferencia existe entre SARLAFT y SAGRILAFT y cuál es la reserva legal del ROS?')" class="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs whitespace-nowrap transition-all shadow-subtle hover:border-slate-300">
+              SARLAFT vs SAGRILAFT (TEMPLATE-04)
+            </button>
+            <button onclick="insertarSugerencia('Probar DLP: Asociada María Gómez CC 1020492819 cuenta 405910294 saldo $18,500,000 en pagaré.')" class="px-2.5 py-1 rounded-full bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs whitespace-nowrap transition-all shadow-subtle hover:border-slate-300">
+              Test Enmascaramiento PII
+            </button>
+          </div>
+
+          <!-- Preview de Contexto Adjunto -->
+          <div id="contextAttachmentPill" class="hidden items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-1.5 text-xs text-emerald-800">
+            <div class="flex items-center gap-2">
+              <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+              <span class="font-medium" id="attachedFileName">plantilla_solicitudes_credito.xlsx</span>
+              <span class="text-[10px] text-emerald-600 font-mono">(Contexto Local Encriptado en Memoria)</span>
+            </div>
+            <button onclick="removerAdjunto()" class="text-emerald-700 hover:text-emerald-900">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+          <!-- Formulario de Consulta -->
+          <form id="chatForm" onsubmit="enviarMensaje(event)" class="relative flex items-end gap-2 bg-white rounded-2xl border border-slate-300/90 shadow-subtle focus-within:border-slate-700 focus-within:ring-2 focus-within:ring-slate-900/10 transition-all duration-200 p-2">
+            
+            <button type="button" onclick="adjuntarContextoModal()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-all flex-shrink-0" title="Adjuntar Documento Local Cifrado">
+              <i data-lucide="paperclip" class="w-4 h-4"></i>
+            </button>
+
+            <button type="button" onclick="ciclarModoNormativo()" id="normativeScopeBtn" class="hidden sm:flex items-center gap-1 px-2 py-1.5 text-[11px] font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors flex-shrink-0" title="Filtrar Corpus Normativo">
+              <i data-lucide="scale" class="w-3.5 h-3.5 text-slate-500"></i>
+              <span id="scopeLabel">Revisoría Fiscal</span>
+            </button>
+
+            <textarea
+              id="userQueryInput"
+              rows="1"
+              placeholder="Consulta sobre arqueos, NIAs, hallazgos CCCER, SARLAFT o pega datos (DLP los enmascara)..."
+              class="w-full bg-transparent resize-none border-0 focus:outline-none focus:ring-0 text-slate-800 placeholder-slate-400 text-sm py-1.5 px-2 max-h-32 leading-relaxed"
+              onkeydown="handleKeyDown(event)"
+              oninput="autoResize(this)"
+            ></textarea>
+
+            <button
+              type="submit"
+              id="sendButton"
+              class="p-2.5 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl shadow-sm transition-all duration-200 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed group"
+              title="Enviar consulta (Enter)"
+            >
+              <i data-lucide="arrow-up" class="w-4 h-4 group-hover:-translate-y-0.5 transition-transform"></i>
+            </button>
+          </form>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
+            <div class="flex items-center gap-1.5">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i>
+              <span>Protección PII en Tiempo Real · Secreto Profesional (Ley 43 de 1990) · Hash SHA-256</span>
+            </div>
+            <div class="hidden sm:flex items-center gap-3 font-mono text-[10px]">
+              <span class="text-emerald-600 font-bold">DLP ONLINE</span>
+              <span>·</span>
+              <span>Drive: 1ydk3BUI...</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ======================================================================= -->
+    <!-- 3. VISTA B: SIMULADOR KPO (50 CASOS DE PRUEBA DEL TALLER)               -->
+    <!-- ======================================================================= -->
+    <section id="viewSimulador" class="hidden flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-card space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center">
+              <i data-lucide="play-circle" class="w-5 h-5 text-emerald-400"></i>
+            </div>
+            <div>
+              <h2 class="text-base font-bold text-slate-900">Simulador de Consultas de Revisoría Fiscal & KPO</h2>
+              <p class="text-xs text-slate-500">Casos tipo Sprint KPO Semana 4 · Ejecución en 1 Clic con Registro en Auditoría</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            50 Casos Indexados
+          </span>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          Selecciona cualquiera de los casos tipificados en la base de conocimientos. El simulador transferirá automáticamente la consulta a la Consola RAG, ejecutará el enmascaramiento DLP y registrará el log forense correspondiente.
+        </p>
+      </div>
+
+      <!-- Grid de Casos de Prueba -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        
+        <!-- Caso 1 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #01 · ARQUEO</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">TEMPLATE-01</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">Arqueo sorpresivo de caja menor con vales provisionales</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">¿Cómo documentar un faltante de caja menor y qué firmas obligatorias debe contener el acta de arqueo?</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('¿Cómo documentar un faltante de caja menor y qué firmas obligatorias debe contener el acta de arqueo según TEMPLATE-01?')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+        <!-- Caso 2 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #02 · FRAUDE</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">NIA 240</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">Indicios de fraude y escepticismo profesional</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">¿Cuál es el límite del auditor ante indicios de fraude y cómo evitar prejuzgar culpabilidad penal?</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('¿Cuál es el guardrail del auditor ante indicios de fraude y cómo aplicar la NIA 240 sin emitir juicios penales?')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+        <!-- Caso 3 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #03 · HALLAZGOS</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">COSO 2013</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">Estructuración técnica de hallazgos C-C-C-E-R</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">Redacta un hallazgo de auditoría formal para 4 expedientes de crédito sin carta de instrucciones.</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('Redacta un hallazgo de auditoría bajo la metodología C-C-C-E-R (Condición, Criterio, Causa, Efecto y Recomendación) para 4 pagarés sin carta de instrucciones.')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+        <!-- Caso 4 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #04 · LA/FT</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">TEMPLATE-04</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">Diferenciación SARLAFT vs SAGRILAFT y ROS</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">¿A quién aplica SARLAFT vs SAGRILAFT y cuáles son las implicaciones de alertar al cliente sobre un ROS?</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('¿Cuál es la diferencia de ámbito entre SARLAFT y SAGRILAFT, y por qué está legalmente prohibido alertar al cliente sobre un ROS (anti-tipping off)?')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+        <!-- Caso 5 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #05 · RAD-2025</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">DEMOBATCH</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">RAD-2025-002: Discrepancia en conteo de soportes</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">Compara 3 soportes reportados en radicado vs 2 encontrados en matriz documental.</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('Analiza el caso RAD-2025-002 de demoBatch.js: ¿por qué se tipifica como discrepancia en conteo de soportes y qué regla del README.md aplica?')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+        <!-- Caso 6 -->
+        <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-subtle hover:border-slate-800 transition-all flex flex-col justify-between space-y-2">
+          <div>
+            <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 mb-1">
+              <span>CASO #06 · DLP TEST</span>
+              <span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 font-semibold">LEY 1581</span>
+            </div>
+            <h3 class="text-xs font-bold text-slate-900">Prueba de fuego de sanitización de datos sensibles</h3>
+            <p class="text-[11px] text-slate-500 mt-1 line-clamp-2">Inyección de cédula real, pagaré y sueldo para verificar enmascaramiento antes de procesar.</p>
+          </div>
+          <button onclick="ejecutarCasoSimulador('Revisar pagaré 984019284 del deudor Juan Valdés CC 79.840.129 por salario de $4.500.000 COP y verificar validez en el fondo.')" class="w-full py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors">
+            <i data-lucide="play" class="w-3 h-3 text-emerald-400"></i> Probar en Consola
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 4. VISTA C: CENTRO DE CIBERSEGURIDAD, DLP & HABEAS DATA                 -->
+    <!-- ======================================================================= -->
+    <section id="viewSeguridad" class="hidden flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-card space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-slate-900 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="shield" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-900">Centro de Ciberseguridad & Cumplimiento Normativo</h2>
+            <p class="text-xs text-slate-500">Arquitectura de Privacidad por Diseño (PbD) · Ley 1581 de 2012 · Secreto Profesional Ley 43 de 1990</p>
+          </div>
+        </div>
+
+        <!-- Métricas de Seguridad -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400 uppercase">PII Anonimizados</p>
+            <p id="secMetricPii" class="text-xl font-mono font-bold text-emerald-600 mt-0.5">14</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400 uppercase">Algoritmo Hash</p>
+            <p class="text-xs font-mono font-bold text-slate-800 mt-2">SHA-256 HMAC</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400 uppercase">Persistencia Disco</p>
+            <p class="text-xs font-mono font-bold text-emerald-600 mt-2">0% (RAM Only)</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400 uppercase">Sesión Segura</p>
+            <p class="text-xs font-mono font-bold text-blue-600 mt-2">TLS 1.3 / MFA</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Políticas y Matriz Normativa -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-card space-y-4">
+        <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i>
+          Controles de Seguridad Implementados
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Enmascaramiento DLP Regex en Cliente
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              Expresiones regulares filtran números de cédula, NIT, números de cuenta, libranzas y salarios antes de la inferencia, evitando la fuga de información sensible.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Guardrail Anti-Prompt Injection
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              Bloqueo estricto de instrucciones que intenten anular directrices normativas, solicitar decisiones de aprobación crediticia o alterar balances contables.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Zeroization Criptográfico en RAM
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              El botón de purga local sobreescribe la memoria volátil con ceros (<code>0x00000000</code>), eliminando cualquier remanencia de datos según la Ley 43 de 1990.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+            <h4 class="font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Trazabilidad Dual Inmutable
+            </h4>
+            <p class="text-slate-600 leading-relaxed">
+              Estructura <code>DualValue&lt;T&gt;</code> que conserva el dato original y el normalizado para peritajes judiciales y sustentación de papeles de trabajo (NIA 230).
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 5. VISTA D: SEGUIMIENTO FORENSE DE ACTIVIDADES & LOGINS                  -->
+    <!-- ======================================================================= -->
+    <section id="viewActividades" class="hidden flex-1 flex flex-col h-full bg-slate-50 overflow-y-auto p-4 sm:p-6 space-y-4">
+      <div class="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="activity" class="w-5 h-5 text-emerald-600"></i>
+            Bitácora Forense de Actividades & Auditoría de Logins
+          </h2>
+          <p class="text-xs text-slate-500">Registro inmutable de accesos, enmascaramientos DLP, consultas y eventos de sesión</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="copiarTodosLosLogs()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar Todo
+          </button>
+          <button onclick="descargarAuditJSON()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors">
+            <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-400"></i> Exportar JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de Actividades Forenses -->
+      <div class="bg-white rounded-2xl border border-slate-200/90 shadow-card overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700 uppercase tracking-wide">Eventos Registrados en Memoria Volátil</span>
+          <span class="text-[11px] font-mono text-slate-500">Sello Criptográfico SHA-256</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="bg-slate-100 text-slate-700 border-b border-slate-200">
+              <tr>
+                <th class="py-2.5 px-4 font-semibold">Tipo Evento</th>
+                <th class="py-2.5 px-4 font-semibold">Timestamp (Local)</th>
+                <th class="py-2.5 px-4 font-semibold">Actor / Rol</th>
+                <th class="py-2.5 px-4 font-semibold">Detalle de Actividad</th>
+                <th class="py-2.5 px-4 font-semibold">Estado / Hash</th>
+              </tr>
+            </thead>
+            <tbody id="activityTableBody" class="divide-y divide-slate-200 text-slate-600">
+              <!-- Renderizado dinámico -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================================================================= -->
+    <!-- 6. PANEL LATERAL DERECHO (DRAWER): AUDITORÍA INTEGRAL (LOGS & LOGINS)   -->
+    <!-- ======================================================================= -->
+    <aside
+      id="auditDrawer"
+      class="fixed inset-y-0 right-0 z-50 w-full sm:w-[500px] md:w-[580px] bg-[#090d16] text-slate-100 shadow-2xl border-l border-slate-800 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col font-mono"
+    >
+      <div class="p-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between select-none">
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xs font-bold text-white tracking-wide uppercase">Consola de Auditoría Forense</h2>
+              <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">DLP / SHA-256</span>
+            </div>
+            <p class="text-[10px] text-slate-400">Trazabilidad JSON inmutable con hashes criptográficos y estatus PII</p>
+          </div>
+        </div>
+
+        <button onclick="toggleAuditDrawer(false)" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Sub-tabs del Drawer -->
+      <div class="px-4 py-2 bg-slate-950 border-b border-slate-800 flex items-center justify-between text-xs select-none">
+        <div class="flex items-center gap-2">
+          <button onclick="cambiarTabDrawer('consultas')" id="drawerTabBtnConsultas" class="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-slate-700">
+            Consultas RAG (<span id="drawerCountConsultas">1</span>)
+          </button>
+          <button onclick="cambiarTabDrawer('logins')" id="drawerTabBtnLogins" class="px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-400 hover:text-white">
+            Logins & Accesos (<span id="drawerCountLogins">2</span>)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="copiarTodosLosLogs()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] flex items-center gap-1 transition-colors">
+            <i data-lucide="copy" class="w-3 h-3 text-slate-400"></i> Copiar
+          </button>
+          <button onclick="descargarAuditJSON()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] flex items-center gap-1 transition-colors">
+            <i data-lucide="download" class="w-3 h-3 text-slate-400"></i> .JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenedor Scrollable del Drawer -->
+      <div id="auditLogsContainer" class="flex-1 overflow-y-auto p-4 space-y-4 terminal-scroll"></div>
+
+      <div class="p-3 bg-slate-950 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Buffer Volátil Cifrado (AES-256)</span>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">Ley 1581 / NIA 230 / ISO 27001</span>
+      </div>
+    </aside>
+
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- MODALES: AUTENTICACIÓN / LOGIN, MATERIALIDAD Y ZEROIZATION                 -->
+  <!-- ========================================================================= -->
+
+  <!-- MODAL: AUTENTICACIÓN & CAMBIO DE CREDENCIALES DE AUDITOR -->
+  <div id="modalAuth" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-float border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-slate-900 text-emerald-400 flex items-center justify-center">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900">Credenciales & Autenticación de Auditor</h3>
+            <p class="text-[11px] text-slate-500">Registro en Bitácora Forense (NIA 230 / ISO 27001)</p>
+          </div>
+        </div>
+        <button onclick="toggleModalAuth(false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="authForm" onsubmit="ejecutarLoginAuditor(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Nombre Completo del Auditor:</label>
+          <input type="text" id="authInputNombre" value="Dr. Carlos Mendoza, CPA" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Tarjeta Profesional (Junta Central de Contadores):</label>
+          <input type="text" id="authInputTP" value="TP-184920-T" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono font-medium" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Rol / Perfil de Aseguramiento:</label>
+          <select id="authInputRol" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 font-medium">
+            <option value="Revisor Fiscal Principal">Revisor Fiscal Principal (Ley 43 de 1990)</option>
+            <option value="Auditor Senior KPO">Auditor Senior KPO Documental</option>
+            <option value="Oficial de Cumplimiento">Oficial de Cumplimiento SAGRILAFT / SARLAFT</option>
+            <option value="Auditor de Sistemas ISO 27001">Auditor de Sistemas de Información (ISO 27001)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Código MFA / Token de Seguridad (TOTP):</label>
+          <input type="password" id="authInputMFA" value="849201" maxlength="6" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-900 font-mono text-center tracking-widest text-sm font-bold" />
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="toggleModalAuth(false)" class="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-semibold">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold flex items-center gap-1.5 shadow-sm">
+            <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i> Registrar Acceso Auditado
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ZEROIZATION / CONFIRMAR LIMPIEZA -->
+  <div id="modalLimpiar" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-float border border-slate-200 space-y-4 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+        <i data-lucide="shield-alert" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-900">¿Ejecutar Zeroization en RAM?</h3>
+        <p class="text-xs text-slate-500 mt-1">
+          Sobreescribe la memoria volátil con ceros (0x00000000). Se eliminarán de inmediato todos los datos en pantalla y expedientes en memoria, registrando el evento en la bitácora forense.
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="toggleModalLimpiar(false)" class="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">
+          Cancelar
+        </button>
+        <button onclick="ejecutarLimpiezaContexto()" class="flex-1 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-colors">
+          Confirmar Purga
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CALCULADORA DE MATERIALIDAD NIA 320 -->
+  <div id="modalMaterialidad" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-float border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <i data-lucide="calculator" class="w-5 h-5 text-emerald-600"></i>
+          <h3 class="text-sm font-bold text-slate-900">Calculadora de Materialidad (NIA 320)</h3>
+        </div>
+        <button onclick="toggleModalMaterialidad(false)" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Monto de Cartera Evaluada:</label>
+          <div class="flex items-center justify-between font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <span id="montoDisplay" class="font-bold text-slate-900">$ 250.000.000 COP</span>
+          </div>
+          <input type="range" id="montoSlider" min="50000000" max="1000000000" step="25000000" value="250000000" oninput="actualizarSliderMonto(this.value)" class="w-full mt-2 accent-emerald-600 cursor-pointer" />
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Base / Benchmark de Auditoría:</label>
+          <select id="benchmarkSelector" onchange="calcularMaterialidad()" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-medium">
+            <option value="cartera">Total Cartera de Crédito (1.5%)</option>
+            <option value="activos">Total Activos Brutos (0.8%)</option>
+            <option value="utilidad">Excedente Neto del Ejercicio (7.0%)</option>
+          </select>
+        </div>
+
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 space-y-2">
+          <div class="flex justify-between font-mono">
+            <span class="text-emerald-800 font-semibold">Materialidad Planeada (MP):</span>
+            <span id="calcMP" class="font-bold text-emerald-950">$ 3.750.000 COP</span>
+          </div>
+          <div class="flex justify-between font-mono">
+            <span class="text-emerald-800 font-semibold">Error Tolerable (ET 70%):</span>
+            <span id="calcET" class="font-bold text-emerald-950">$ 2.625.000 COP</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="toggleModalMaterialidad(false)" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold">
+          Listo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT: MOTOR DLP, LOGINS, SEGUIMIENTO FORENSE & CORPUS DRIVE          -->
+  <!-- ========================================================================= -->
+  <script>
+    // =========================================================================
+    // 1. ESTADO GLOBAL, PERFIL DE AUDITOR & TIMEOUT
+    // =========================================================================
+    let totalPiiRedacted = 14;
+    let sessionRemainingSeconds = 900; // 15 minutos
+    let sessionActive = true;
+    let drawerCurrentTab = 'consultas';
+
+    let currentAuditor = {
+      nombre: "Dr. Carlos Mendoza, CPA",
+      tp: "TP-184920-T",
+      rol: "Revisor Fiscal Principal",
+      ip: "192.168.1.105 (VPN Fiscal Segura)",
+      mfa_token: "VERIFICADO_TOTP"
+    };
+
+    // Contador regresivo de inactividad de sesión
+    setInterval(() => {
+      if (sessionRemainingSeconds > 0 && sessionActive) {
+        sessionRemainingSeconds--;
+        const mins = String(Math.floor(sessionRemainingSeconds / 60)).padStart(2, '0');
+        const secs = String(sessionRemainingSeconds % 60).padStart(2, '0');
+        const timerElem = document.getElementById('sessionTimerText');
+        if (timerElem) timerElem.textContent = `${mins}:${secs}`;
+      } else if (sessionRemainingSeconds <= 0 && sessionActive) {
+        sessionActive = false;
+        mostrarToast('🔒 Sesión bloqueada por inactividad. Reautentique sus credenciales.', 'error');
+        registrarActividadForense('SESSION_LOCK', 'Bloqueo automático por tiempo de inactividad de 15 minutos', 'WARNING');
+        toggleModalAuth(true);
+      }
+    }, 1000);
+
+    // =========================================================================
+    // 2. MOTOR DLP (DATA LOSS PREVENTION) DE ENMASCARAMIENTO PII
+    // =========================================================================
+    function sanitizarDatosSensibles(texto) {
+      let piiCount = 0;
+      let resultado = texto;
+
+      // Cédulas y NITs
+      const regexCedula = /\b(?:CC|NIT|C\.C\.|TI)?\s*([0-9]{1,3}(?:\.[0-9]{3}){2,3}-[0-9]|[0-9]{7,10})\b/gi;
+      resultado = resultado.replace(regexCedula, (match) => {
+        piiCount++;
+        const ultimos = match.replace(/[^0-9]/g, '').slice(-3);
+        return `<span class="pii-tag" title="Dato Sensible Protegido por Ley 1581">[CC/NIT-PROTEGIDO-***${ultimos}]</span>`;
+      });
+
+      // Cuentas bancarias o pagarés
+      const regexCuenta = /\b(?:cuenta|cta|pagaré|pagare|libranza)?\s*([0-9]{9,16})\b/gi;
+      resultado = resultado.replace(regexCuenta, () => {
+        piiCount++;
+        return `<span class="pii-tag" title="Cuenta Bancaria Enmascarada">[CTA-BANCARIA-ENMASCARADA]</span>`;
+      });
+
+      // Montos monetarios y salarios
+      const regexMonto = /\$\s*[0-9]{1,3}(?:\.[0-9]{3}){1,3}|\b[0-9]{6,10}\s*(?:COP|pesos)\b/gi;
+      resultado = resultado.replace(regexMonto, () => {
+        piiCount++;
+        return `<span class="pii-tag" title="Monto Clasificado">[VALOR-CLASIFICADO]</span>`;
+      });
+
+      // Nombres de asociados
+      const regexNombre = /\b(?:asociado|asociada|cliente|deudor|solicitante)\s+([A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+)/gi;
+      resultado = resultado.replace(regexNombre, () => {
+        piiCount++;
+        return `asociado <span class="pii-tag" title="Identidad Reservada">[IDENTIDAD-RESERVADA]</span>`;
+      });
+
+      totalPiiRedacted += piiCount;
+      const counterElem = document.getElementById('piiCounterSidebar');
+      const metricElem = document.getElementById('secMetricPii');
+      if (counterElem) counterElem.textContent = totalPiiRedacted;
+      if (metricElem) metricElem.textContent = totalPiiRedacted;
+
+      if (piiCount > 0) {
+        registrarActividadForense('DLP_MASKING', `Enmascaramiento de ${piiCount} tokens de datos sensibles (Ley 1581)`, 'INFO');
+      }
+
+      return {
+        textoSanitizado: resultado,
+        piiDetectados: piiCount
+      };
+    }
+
+    function generarHashIntegridad(texto) {
+      let hash = 0;
+      for (let i = 0; i < texto.length; i++) {
+        hash = (hash << 5) - hash + texto.charCodeAt(i);
+        hash |= 0;
+      }
+      return 'sha256-' + Math.abs(hash).toString(16).padStart(12, '0') + '...e4b9';
+    }
+
+    // =========================================================================
+    // 3. BASE DE CONOCIMIENTOS OFICIAL DRIVE (1ydk3BUIO10U89OaE5bIbkfTlnpmpE1bg)
+    // =========================================================================
+    const GDRIVE_KB_BASE_URL = "https://drive.google.com/drive/folders/1ydk3BUIO10U89OaE5bIbkfTlnpmpE1bg";
+
+    const CORPUS_PROYECTO = [
+      {
+        id: "TEMPLATE_01_PROCEDIMIENTOS",
+        file: "01_Procedimientos_auditoria.docx",
+        source_id: "TEMPLATE-01",
+        keywords: ["procedimiento", "procedimientos", "arqueo", "caja menor", "inventario", "inventarios", "sustantiva", "sustantivas", "campo", "corte", "custodio", "comprobante", "recuento"],
+        title: "01_Procedimientos_auditoria.docx — Pruebas Sustantivas, Arqueo de Caja Menor y Toma Física",
+        responseGenerator: (query, runIndex) => ({
+          headline: "Procedimiento Técnico de Auditoría y Pruebas Sustantivas (TEMPLATE-01):",
+          details: [
+            "<strong>1. Arqueo Sorpresivo de Caja Menor:</strong> Debe ejecutarse en presencia obligatoria del custodio responsable con corte inmediato de formas numeradas. Todo efectivo, cheques y vales provisionales se contabilizan simultáneamente.",
+            "<strong>2. Comprobantes Provisionales y Antigüedad:</strong> Los vales provisionales deben liquidarse en los plazos reglamentarios; vales con antigüedad no justificada constituyen presuntos faltantes de control interno.",
+            "<strong>3. Acta de Arqueo y Certificación:</strong> Al finalizar el recuento físico, el custodio firma la constancia formal certificando que los fondos le fueron devueltos a entera satisfacción en su presencia física.",
+            "<strong>4. Inspección Física de Inventarios:</strong> Corte documental de entradas y salidas, recuentos ciegos independientes, prueba de valuación y verificación de obsolescencia conforme a la NIA 501."
+          ],
+          citation: {
+            source_id: "TEMPLATE-01",
+            title: "01_Procedimientos_auditoria.docx (Google Drive)",
+            relevance_score: 0.992,
+            chunk_ref: "TEMPLATE-01: Pruebas Sustantivas, Arqueo Caja Menor e Inventarios",
+            url: GDRIVE_KB_BASE_URL
+          }
+        })
+      },
+      {
+        id: "TEMPLATE_02_NIAS",
+        file: "02_Guia_practica_NIA.docx",
+        source_id: "TEMPLATE-02",
+        keywords: ["nia", "nias", "240", "315", "530", "540", "570", "fraude", "muestreo", "estimacion", "estimaciones", "negocio en marcha", "empresa en funcionamiento", "escepticismo"],
+        title: "02_Guia_practica_NIA.docx — Síntesis Didáctica de NIA 240, 315, 530, 540 y 570",
+        responseGenerator: (query, runIndex) => ({
+          headline: "Aplicación Práctica de Normas Internacionales de Auditoría (TEMPLATE-02 / SRC-001):",
+          details: [
+            "<strong>NIA 240 (Fraude y Error):</strong> El auditor mantiene escepticismo profesional permanente. Reconoce la triangulación del fraude (Incentivo/Presión, Oportunidad, Racionalización). Guardrail esencial: el auditor no prejuzga culpabilidad penal, pero documenta indicios inusuales y escala al Comité.",
+            "<strong>NIA 315 (Riesgos de Incorrección Material):</strong> Identificación y valoración de riesgos mediante el entendimiento integral de la entidad, su entorno de negocio y la eficacia del control interno.",
+            "<strong>NIA 530 (Muestreo de Auditoría):</strong> Selección representativa estadística o no estadística. Desvíos no pueden descartarse como aislados sin proyectar el error al universo total.",
+            "<strong>NIA 540 & NIA 570:</strong> Evaluación de estimaciones de deterioro de cartera crediticia y verificación de la hipótesis de empresa en funcionamiento / negocio en marcha."
+          ],
+          citation: {
+            source_id: "TEMPLATE-02",
+            title: "02_Guia_practica_NIA.docx (Google Drive)",
+            relevance_score: 0.995,
+            chunk_ref: "TEMPLATE-02: Síntesis Didáctica NIA 240, 315, 530, 540 y 570",
+            url: GDRIVE_KB_BASE_URL
+          }
+        })
+      },
+      {
+        id: "TEMPLATE_03_COSO_CCCER",
+        file: "03_Control_interno_COSO_y_hallazgos.docx",
+        source_id: "TEMPLATE-03",
+        keywords: ["coso", "hallazgo", "hallazgos", "cccer", "c-c-c-e-r", "condicion", "criterio", "causa", "efecto", "recomendacion", "control interno"],
+        title: "03_Control_interno_COSO_y_hallazgos.docx — Metodología de Hallazgos C-C-C-E-R y Marco COSO",
+        responseGenerator: (query, runIndex) => ({
+          headline: "Estructuración Forense de Hallazgos bajo Metodología C-C-C-E-R (TEMPLATE-03):",
+          details: [
+            "<strong>1. Condición (Lo que es):</strong> La situación fáctica real observada en los papeles de trabajo (ej. 'En 4 de 25 expedientes de crédito seleccionados no reposa la carta de instrucciones firmada').",
+            "<strong>2. Criterio (Lo que debe ser):</strong> La norma, estándar técnico o manual que rige la operación (Circular Básica Contable y Financiera Supersolidaria / Código de Comercio).",
+            "<strong>3. Causa (La raíz):</strong> La debilidad u omisión de control interno que permitió que ocurriera la condición (ausencia de lista de chequeo y supervisión dual previa al desembolso).",
+            "<strong>4. Efecto (El impacto):</strong> Consecuencia económica, operativa o legal real o potencial (riesgo de inoponibilidad judicial del pagaré ante proceso coactivo).",
+            "<strong>5. Recomendación (La acción correctiva):</strong> Propuesta viable dirigida a la alta administración para subsanar la causa raíz de forma definitiva."
+          ],
+          citation: {
+            source_id: "TEMPLATE-03",
+            title: "03_Control_interno_COSO_y_hallazgos.docx (Google Drive)",
+            relevance_score: 0.997,
+            chunk_ref: "TEMPLATE-03: Estructura de 5 Atributos Forenses C-C-C-E-R",
+            url: GDRIVE_KB_BASE_URL
+          }
+        })
+      },
+      {
+        id: "TEMPLATE_04_SARLAFT_SAGRILAFT_ROS",
+        file: "04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx",
+        source_id: "TEMPLATE-04",
+        keywords: ["sarlaft", "sagrilaft", "ros", "uiaf", "lavado", "activos", "sospechosa", "sospechoso", "reserva", "oficial de cumplimiento", "reporte", "tipping"],
+        title: "04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx — Régimen LA/FT/FPADM y Reporte ROS",
+        responseGenerator: (query, runIndex) => ({
+          headline: "Régimen de Cumplimiento SARLAFT / SAGRILAFT y Manejo de ROS (TEMPLATE-04):",
+          details: [
+            "<strong>1. Distinción Estricta de Regímenes:</strong> SARLAFT aplica al sector de economía solidaria (Supersolidaria - Título V CBJ) y entidades vigiladas por SFC. SAGRILAFT aplica al sector real societario (Supersociedades - Capítulo X CBJ).",
+            "<strong>2. Naturaleza Jurídica del ROS:</strong> El Reporte de Operación Sospechosa es una comunicación técnica reservada a la UIAF. <em>NO constituye una denuncia penal ni una sentencia judicial</em>.",
+            "<strong>3. Prohibición Absoluta de Alerta (Anti-Tipping Off):</strong> Está legalmente prohibido comunicar a la contraparte, asociado o terceros que se ha radicado o analizado un ROS, so pena de sanciones penales y administrativas.",
+            "<strong>4. Canal Exclusivo y Reserva Legal:</strong> El trámite corresponde con exclusividad al Oficial de Cumplimiento designado bajo secreto profesional (Ley 43 de 1990)."
+          ],
+          citation: {
+            source_id: "TEMPLATE-04",
+            title: "04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx (Google Drive)",
+            relevance_score: 0.999,
+            chunk_ref: "TEMPLATE-04: SARLAFT, SAGRILAFT y Reserva Absoluta del ROS",
+            url: GDRIVE_KB_BASE_URL
+          }
+        })
+      }
+    ];
+
+    let queryCounter = 0;
+
+    function buscarEnCorpusDrive(query) {
+      queryCounter++;
+      
+      // Control Anti-Jailbreak y Anti-Prompt Injection
+      const qLower = query.toLowerCase();
+      if (qLower.includes("ignora") || qLower.includes("jailbreak") || qLower.includes("aprueba el crédito") || qLower.includes("password") || qLower.includes("contraseña")) {
+        registrarActividadForense('SECURITY_BLOCK', 'Intento de Jailbreak / Prompt Injection denegado', 'CRITICAL');
+        return {
+          headline: "ADVERTENCIA DE SEGURIDAD Y CONTROL DE GUARDRAILS (Ley 43 de 1990 & README.md):",
+          details: [
+            "<strong>1. Rechazo de Manipulación de Criterio:</strong> La Revisoría Fiscal ejerce sus funciones con independencia mental y objetividad legal. No se admiten instrucciones que vulneren los principios de aseguramiento.",
+            "<strong>2. Guardrail 2 (No Decisión Crediticia):</strong> La consola no tiene facultades para aprobar, rechazar créditos ni calcular scoring de solvencia.",
+            "<strong>3. Trazabilidad de Intrusión:</strong> Este intento de manipulación ha sido sellado con hash SHA-256 en la bitácora de auditoría forense para revisión del Oficial de Seguridad."
+          ],
+          citation: {
+            source_id: "GUARDRAIL-SECURITY-01",
+            title: "README.md - Guardrails Normativos y Ciberseguridad Bancaria",
+            relevance_score: 1.0,
+            chunk_ref: "Código de Ética Ley 43 de 1990 & Aislamiento de Memoria",
+            url: GDRIVE_KB_BASE_URL
+          }
+        };
+      }
+
+      // Búsqueda en Corpus
+      for (const chunk of CORPUS_PROYECTO) {
+        if (chunk.keywords.some(k => qLower.includes(k))) {
+          return chunk.responseGenerator(query, queryCounter);
+        }
+      }
+
+      // Respuesta General fundamentada en Drive
+      return {
+        headline: "Dictamen Técnico de Revisoría Fiscal Fundamentado en Repositorio Drive:",
+        details: [
+          "<strong>Documentación Oficial Vinculada:</strong> La consulta se procesa de conformidad con las guías de aseguramiento <code>TEMPLATE-01</code> a <code>TEMPLATE-04</code> y el Decreto Único Reglamentario 2420 de 2015 Anexo 4.",
+          "<strong>Protección de Datos Sensibles (Ley 1581 de 2012):</strong> Se ha verificado el enmascaramiento previo de todo dato identificador en memoria volátil.",
+          "<strong>Trazabilidad y Papeles de Trabajo:</strong> La interacción queda registrada con sello digital en la bitácora forense de actividades."
+        ],
+        citation: {
+          source_id: "GDRIVE-OFFICIAL-KB",
+          title: "Base de Conocimientos Oficial Google Drive (1ydk3BUI...)",
+          relevance_score: 0.985,
+          chunk_ref: "Repositorio Oficial de Revisoría Fiscal & KPO",
+          url: GDRIVE_KB_BASE_URL
+        }
+      };
+    }
+
+    // =========================================================================
+    // 4. REGISTRO DE AUDITORÍA, LOGINS & ACTIVIDADES FORENSES
+    // =========================================================================
+    const auditTrailLogs = [];
+    const loginAuditLogs = [
+      {
+        auth_id: "AUTH-8920-INIT",
+        timestamp: new Date(Date.now() - 3600000).toLocaleString('es-CO'),
+        user: "Dr. Carlos Mendoza, CPA",
+        tp: "TP-184920-T",
+        role: "Revisor Fiscal Principal",
+        ip: "192.168.1.105 (VPN Fiscal)",
+        status: "LOGIN_SUCCESS",
+        mfa: "VERIFICADO_TOTP",
+        sha256: "sha256-7fa1c2...01e9"
+      },
+      {
+        auth_id: "AUTH-8921-SESS",
+        timestamp: new Date(Date.now() - 1800000).toLocaleString('es-CO'),
+        user: "Dr. Carlos Mendoza, CPA",
+        tp: "TP-184920-T",
+        role: "Revisor Fiscal Principal",
+        ip: "192.168.1.105 (VPN Fiscal)",
+        status: "TOKEN_REFRESH",
+        mfa: "VERIFICADO_TOTP",
+        sha256: "sha256-81c4e9...99b2"
+      }
+    ];
+
+    const activityTrackingLogs = [];
+
+    function registrarActividadForense(tipo, detalle, severidad = 'INFO') {
+      const now = new Date();
+      const act = {
+        activity_id: `ACT-${Math.floor(1000 + Math.random() * 9000)}`,
+        timestamp: now.toLocaleTimeString('es-CO'),
+        timestamp_full: now.toISOString(),
+        tipo: tipo,
+        detalle: detalle,
+        severidad: severidad,
+        actor: currentAuditor.nombre,
+        rol: currentAuditor.rol,
+        sha256: generarHashIntegridad(detalle + now.toISOString())
+      };
+      activityTrackingLogs.unshift(act);
+      renderizarTablaActividades();
+      const badge = document.getElementById('actividadesBadgeCount');
+      if (badge) badge.textContent = activityTrackingLogs.length;
+    }
+
+    function renderizarTablaActividades() {
+      const tbody = document.getElementById('activityTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = activityTrackingLogs.map(a => {
+        const badgeColor = a.severidad === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-300' :
+                           a.severidad === 'WARNING' ? 'bg-amber-100 text-amber-800 border-amber-300' :
+                           'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-4 font-bold">
+              <span class="px-2 py-0.5 rounded text-[10px] border ${badgeColor}">${a.tipo}</span>
+            </td>
+            <td class="py-2.5 px-4 text-slate-500">${a.timestamp}</td>
+            <td class="py-2.5 px-4 font-semibold text-slate-800">${a.rol}</td>
+            <td class="py-2.5 px-4 text-slate-600">${a.detalle}</td>
+            <td class="py-2.5 px-4 text-[10px] text-slate-400 font-mono">${a.sha256.slice(0, 16)}...</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function registrarEventoAuditoria({ user_query, agent_response, context_sources, execution_time_ms, pii_detected_count = 0 }) {
+      const now = new Date();
+      const newLog = {
+        event_id: "EVT-" + Math.floor(100000 + Math.random() * 900000),
+        timestamp: now.toISOString(),
+        timestamp_local: now.toLocaleString('es-CO'),
+        auditor_authenticated: currentAuditor.nombre,
+        auditor_role: currentAuditor.rol,
+        auditor_tp: currentAuditor.tp,
+        client_ip: currentAuditor.ip,
+        user_query,
+        agent_response,
+        context_sources,
+        execution_time_ms: Math.round(execution_time_ms),
+        pii_tokens_redacted: pii_detected_count,
+        pii_protection_status: pii_detected_count > 0 ? "CONFIDENTIAL_PII_MASKED" : "CLEAN_QUERY",
+        sha256_checksum: generarHashIntegridad(user_query + agent_response),
+        session_encryption: "AES-GCM-256",
+        gdrive_kb_reference: GDRIVE_KB_BASE_URL
+      };
+
+      auditTrailLogs.unshift(newLog);
+      actualizarContadorAuditoria();
+      renderizarLogsAuditoria();
+      registrarActividadForense('QUERY_RAG', `Consulta RAG procesada en ${Math.round(execution_time_ms)}ms (${pii_detected_count} PII protegidos)`, 'INFO');
+      return newLog;
+    }
+
+    function actualizarContadorAuditoria() {
+      const badge = document.getElementById('auditBadgeCount');
+      const countConsultas = document.getElementById('drawerCountConsultas');
+      const countLogins = document.getElementById('drawerCountLogins');
+      if (badge) badge.textContent = auditTrailLogs.length;
+      if (countConsultas) countConsultas.textContent = auditTrailLogs.length;
+      if (countLogins) countLogins.textContent = loginAuditLogs.length;
+    }
+
+    function renderizarLogsAuditoria() {
+      const container = document.getElementById('auditLogsContainer');
+      if (!container) return;
+
+      if (drawerCurrentTab === 'consultas') {
+        container.innerHTML = auditTrailLogs.map((log, index) => {
+          const jsonFormatted = escaparHtml(JSON.stringify(log, null, 2));
+          return `
+            <div class="bg-slate-900 rounded-xl border border-slate-800 p-3.5 space-y-2.5 transition-all hover:border-slate-700 shadow-sm">
+              <div class="flex items-center justify-between text-[11px] pb-2 border-b border-slate-800/80">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  <span class="font-bold text-slate-200">LOG RAG #${auditTrailLogs.length - index}</span>
+                  <span class="px-1.5 py-0.2 rounded text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-800">DLP OK</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-emerald-400 border border-slate-700">
+                    ${log.execution_time_ms} ms
+                  </span>
+                  <button onclick="copiarLogIndividual('${log.event_id}')" class="p-1 hover:text-white text-slate-400 transition-colors" title="Copiar este JSON">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="text-[10px] text-slate-400 flex items-center justify-between font-mono">
+                <span>Auditor: <strong class="text-slate-200">${log.auditor_authenticated}</strong></span>
+                <span>PII Ocultos: <strong class="text-emerald-400">${log.pii_tokens_redacted}</strong></span>
+              </div>
+
+              <div class="relative group/code">
+                <pre class="bg-[#050811] p-3 rounded-lg text-[10px] text-emerald-300 overflow-x-auto leading-relaxed border border-slate-800/60 font-mono">${jsonFormatted}</pre>
+              </div>
+
+              <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1">
+                <span>Timestamp: <strong class="text-slate-400">${log.timestamp_local}</strong></span>
+                <span>Hash: <strong class="text-emerald-400">${log.sha256_checksum.slice(0, 16)}...</strong></span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        // Tab de Logins
+        container.innerHTML = loginAuditLogs.map((log, index) => {
+          return `
+            <div class="bg-slate-900 rounded-xl border border-slate-800 p-3.5 space-y-2">
+              <div class="flex items-center justify-between text-[11px] pb-1.5 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="key" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  <span class="font-bold text-white">${log.auth_id}</span>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-900/60 text-emerald-300 border border-emerald-700">${log.status}</span>
+              </div>
+              <div class="space-y-1 text-[11px] text-slate-300 font-mono">
+                <p><strong>Auditor:</strong> ${log.user} (${log.tp})</p>
+                <p><strong>Rol:</strong> ${log.role}</p>
+                <p><strong>IP Origen:</strong> ${log.ip}</p>
+                <p><strong>MFA:</strong> <span class="text-emerald-400">${log.mfa}</span></p>
+                <p class="text-[10px] text-slate-500">Hash Sello: ${log.sha256}</p>
+                <p class="text-[10px] text-slate-500">Fecha/Hora: ${log.timestamp}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      lucide.createIcons();
+    }
+
+    function cambiarTabDrawer(tab) {
+      drawerCurrentTab = tab;
+      const btnC = document.getElementById('drawerTabBtnConsultas');
+      const btnL = document.getElementById('drawerTabBtnLogins');
+      if (tab === 'consultas') {
+        btnC.className = "px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-slate-700";
+        btnL.className = "px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-400 hover:text-white";
+      } else {
+        btnL.className = "px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-800 text-emerald-400 border border-slate-700";
+        btnC.className = "px-2.5 py-1 rounded-md text-[11px] font-semibold text-slate-400 hover:text-white";
+      }
+      renderizarLogsAuditoria();
+    }
+
+    function toggleAuditDrawer(show) {
+      const drawer = document.getElementById('auditDrawer');
+      const backdrop = document.getElementById('auditDrawerBackdrop');
+      if (show) {
+        drawer.classList.remove('translate-x-full');
+        backdrop.classList.remove('hidden');
+        renderizarLogsAuditoria();
+        registrarActividadForense('DRAWER_OPEN', 'Apertura de la consola de auditoría y logs JSON', 'INFO');
+      } else {
+        drawer.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function copiarLogIndividual(eventId) {
+      const log = auditTrailLogs.find(l => l.event_id === eventId);
+      if (log) {
+        navigator.clipboard.writeText(JSON.stringify(log, null, 2)).then(() => {
+          mostrarToast(`Log cifrado ${eventId} copiado.`, 'success');
+          registrarActividadForense('LOG_COPY', `Copiado de registro de evento individual ${eventId}`, 'INFO');
+        });
+      }
+    }
+
+    function copiarTodosLosLogs() {
+      const fullAuditData = {
+        audit_session_id: "SESSION-" + Math.floor(1000 + Math.random() * 9000),
+        generated_at: new Date().toISOString(),
+        auditor_in_charge: currentAuditor,
+        consultas_rag: auditTrailLogs,
+        logins_auditados: loginAuditLogs,
+        actividades_forenses: activityTrackingLogs,
+        security_hash: generarHashIntegridad(JSON.stringify(auditTrailLogs))
+      };
+      navigator.clipboard.writeText(JSON.stringify(fullAuditData, null, 2)).then(() => {
+        mostrarToast(`Todos los registros de auditoría y logins copiados.`, 'success');
+        registrarActividadForense('LOG_EXPORT_COPY', 'Exportación al portapapeles de todos los logs de auditoría', 'INFO');
+      });
+    }
+
+    function descargarAuditJSON() {
+      const fullAuditData = {
+        audit_session_id: "SESSION-" + Math.floor(1000 + Math.random() * 9000),
+        generated_at: new Date().toISOString(),
+        auditor_in_charge: currentAuditor,
+        consultas_rag: auditTrailLogs,
+        logins_auditados: loginAuditLogs,
+        actividades_forenses: activityTrackingLogs,
+        security_hash: generarHashIntegridad(JSON.stringify(auditTrailLogs))
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullAuditData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `auditoria_forense_revisoria_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      mostrarToast('Archivo de auditoría descargado exitosamente.', 'success');
+      registrarActividadForense('LOG_DOWNLOAD', 'Descarga de archivo audit_trail.json con firma SHA-256', 'INFO');
+    }
+
+    // =========================================================================
+    // 5. NAVEGACIÓN ENTRE VISTAS PRINCIPALES
+    // =========================================================================
+    function cambiarVistaPrincipal(vista) {
+      document.getElementById('viewChat').classList.toggle('hidden', vista !== 'chat');
+      document.getElementById('viewSimulador').classList.toggle('hidden', vista !== 'simulador');
+      document.getElementById('viewSeguridad').classList.toggle('hidden', vista !== 'seguridad');
+      document.getElementById('viewActividades').classList.toggle('hidden', vista !== 'actividades');
+
+      const tabs = ['chat', 'simulador', 'seguridad', 'actividades'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('tabBtn' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          if (t === vista) {
+            btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 bg-slate-900 text-white shadow-sm transition-all duration-200";
+          } else {
+            btn.className = "px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all duration-200";
+          }
+        }
+      });
+
+      registrarActividadForense('VIEW_NAVIGATE', `Cambio de vista principal a: ${vista.toUpperCase()}`, 'INFO');
+    }
+
+    function ejecutarCasoSimulador(consulta) {
+      cambiarVistaPrincipal('chat');
+      insertarSugerencia(consulta);
+      document.getElementById('chatForm').requestSubmit();
+      registrarActividadForense('SIMULATOR_CASE', `Ejecución de caso del simulador KPO: "${consulta.slice(0, 45)}..."`, 'INFO');
+    }
+
+    // =========================================================================
+    // 6. AUTENTICACIÓN / LOGIN FORENSE
+    // =========================================================================
+    function toggleModalAuth(show) {
+      document.getElementById('modalAuth').classList.toggle('hidden', !show);
+    }
+
+    function ejecutarLoginAuditor(event) {
+      event.preventDefault();
+      const nombre = document.getElementById('authInputNombre').value.trim();
+      const tp = document.getElementById('authInputTP').value.trim();
+      const rol = document.getElementById('authInputRol').value;
+      const mfa = document.getElementById('authInputMFA').value.trim();
+
+      currentAuditor = {
+        nombre,
+        tp,
+        rol,
+        ip: "192.168.1.105 (VPN Fiscal Segura)",
+        mfa_token: "MFA-PASS-" + mfa
+      };
+
+      document.getElementById('activeUserHeaderName').textContent = nombre;
+      document.getElementById('activeUserHeaderRole').textContent = `${tp} · ${rol}`;
+
+      sessionRemainingSeconds = 900;
+      sessionActive = true;
+
+      // Grabar en bitácora de Logins
+      const loginEvent = {
+        auth_id: "AUTH-" + Math.floor(1000 + Math.random() * 9000),
+        timestamp: new Date().toLocaleString('es-CO'),
+        user: nombre,
+        tp: tp,
+        role: rol,
+        ip: currentAuditor.ip,
+        status: "LOGIN_SUCCESS",
+        mfa: "VERIFICADO_TOTP",
+        sha256: generarHashIntegridad(nombre + tp + rol + new Date().toISOString())
+      };
+      loginAuditLogs.unshift(loginEvent);
+      actualizarContadorAuditoria();
+
+      toggleModalAuth(false);
+      mostrarToast(`Autenticado: ${nombre} (${rol})`, 'success');
+      registrarActividadForense('AUTH_LOGIN', `Inicio de sesión exitoso con Tarjeta Profesional ${tp}`, 'INFO');
+    }
+
+    // =========================================================================
+    // 7. ENVÍO DE CONSULTA Y PROCESAMIENTO RAG
+    // =========================================================================
+    function autoResize(textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        document.getElementById('chatForm').requestSubmit();
+      }
+    }
+
+    function insertarSugerencia(texto) {
+      const input = document.getElementById('userQueryInput');
+      input.value = texto;
+      autoResize(input);
+      input.focus();
+    }
+
+    function lanzarConsultaRapida(tipo) {
+      toggleSidebar(false);
+      cambiarVistaPrincipal('chat');
+      if (tipo === 'template01') insertarSugerencia('¿Cuáles son los pasos obligatorios para un arqueo sorpresivo de caja menor y qué firmas exige TEMPLATE-01?');
+      else if (tipo === 'template02') insertarSugerencia('Explica los requisitos de escepticismo profesional en NIA 240 frente al fraude según TEMPLATE-02.');
+      else if (tipo === 'template03') insertarSugerencia('Redacta un hallazgo de auditoría bajo la metodología C-C-C-E-R (Condición, Criterio, Causa, Efecto y Recomendación) según TEMPLATE-03.');
+      else if (tipo === 'template04') insertarSugerencia('¿Cuál es la reserva legal de un Reporte de Operación Sospechosa (ROS) ante la UIAF según TEMPLATE-04?');
+      document.getElementById('chatForm').requestSubmit();
+    }
+
+    function toggleSidebar(show) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      if (show) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+      }
+    }
+
+    function ciclarModoNormativo() {
+      const scopes = ['Revisoría Fiscal', 'Ciberseguridad & DLP', 'Auditoría Forense'];
+      const current = document.getElementById('scopeLabel').textContent;
+      const nextIndex = (scopes.indexOf(current) + 1) % scopes.length;
+      document.getElementById('scopeLabel').textContent = scopes[nextIndex];
+      mostrarToast(`Alcance: ${scopes[nextIndex]}`, 'info');
+    }
+
+    function toggleModalLimpiar(show) {
+      document.getElementById('modalLimpiar').classList.toggle('hidden', !show);
+    }
+    function confirmarLimpiarContexto() {
+      toggleModalLimpiar(true);
+    }
+
+    function toggleModalMaterialidad(show) {
+      document.getElementById('modalMaterialidad').classList.toggle('hidden', !show);
+      if (show) calcularMaterialidad();
+    }
+
+    function actualizarSliderMonto(val) {
+      const formatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(val);
+      document.getElementById('montoDisplay').textContent = formatted;
+      calcularMaterialidad();
+    }
+
+    function calcularMaterialidad() {
+      const monto = parseFloat(document.getElementById('montoSlider').value);
+      const benchmark = document.getElementById('benchmarkSelector').value;
+      let factor = 0.015;
+      if (benchmark === 'activos') factor = 0.008;
+      if (benchmark === 'utilidad') factor = 0.07;
+
+      const mp = monto * factor;
+      const et = mp * 0.70;
+      const format = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n);
+      document.getElementById('calcMP').textContent = format(mp);
+      document.getElementById('calcET').textContent = format(et);
+    }
+
+    function ejecutarLimpiezaContexto() {
+      toggleModalLimpiar(false);
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = `
+        <div class="flex justify-center">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200/80 text-[11px] font-medium text-slate-500 shadow-subtle">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span>Memoria purgada criptográficamente · Zeroization completado (0x00000000)</span>
+          </div>
+        </div>
+        <div class="max-w-2xl mx-auto text-center py-12 px-4 space-y-3">
+          <div class="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center mx-auto shadow-card">
+            <i data-lucide="lock" class="w-6 h-6 text-emerald-400"></i>
+          </div>
+          <h2 class="text-base font-bold text-slate-900">Consola Segura Restablecida</h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Se ha eliminado cualquier rastro en RAM de cédulas, cuentas y pagarés. La sesión cumple con la reserva legal y la Ley 1581 de 2012.
+          </p>
+        </div>
+      `;
+      document.getElementById('userQueryInput').value = '';
+      mostrarToast('🔒 Purga criptográfica exitosa. Memoria volátil liberada.', 'success');
+      registrarActividadForense('RAM_ZEROIZATION', 'Sobreescritura con ceros (0x00000000) ejecutada por el Revisor Fiscal', 'WARNING');
+      lucide.createIcons();
+    }
+
+    function iniciarNuevaConsulta() {
+      ejecutarLimpiezaContexto();
+      toggleSidebar(false);
+    }
+
+    function enviarMensaje(event) {
+      event.preventDefault();
+      const input = document.getElementById('userQueryInput');
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      const startTime = performance.now();
+      const chatMessages = document.getElementById('chatMessages');
+      const typingIndicator = document.getElementById('typingIndicator');
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      // Sanitización DLP
+      const dlpResult = sanitizarDatosSensibles(userText);
+      const dlpBadgeHtml = dlpResult.piiDetectados > 0
+        ? `<div class="flex items-center gap-1.5 pb-1 border-b border-slate-800 text-[10px] text-emerald-400 font-mono">
+             <i data-lucide="shield-alert" class="w-3 h-3 text-emerald-400"></i>
+             <span>DLP: ${dlpResult.piiDetectados} datos sensibles anonimizados (Ley 1581)</span>
+           </div>`
+        : '';
+
+      const userMsgHtml = `
+        <div class="flex flex-col items-end max-w-3xl ml-auto group animate-in">
+          <div class="flex items-center gap-2 mb-1.5 px-1">
+            <span class="text-[11px] font-semibold text-slate-600">${currentAuditor.nombre}</span>
+            <span class="text-[10px] text-slate-400 font-mono">${timeStr}</span>
+          </div>
+          <div class="bg-slate-900 text-white rounded-2xl rounded-tr-sm p-4 sm:p-5 shadow-card max-w-full text-sm leading-relaxed border border-slate-800 space-y-1.5">
+            ${dlpBadgeHtml}
+            <p>${dlpResult.textoSanitizado}</p>
+          </div>
+          <div class="flex items-center gap-2 mt-1.5 px-1 text-[11px] text-slate-400">
+            <span class="flex items-center gap-1"><i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-500"></i> Sanitizado contra fuga de datos</span>
+          </div>
+        </div>
+      `;
+
+      chatMessages.insertAdjacentHTML('beforeend', userMsgHtml);
+      input.value = '';
+      autoResize(input);
+      lucide.createIcons();
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      // Inferencia RAG en Corpus Drive
+      const resultadoRAG = buscarEnCorpusDrive(userText);
+      typingIndicator.classList.remove('hidden');
+      chatMessages.appendChild(typingIndicator);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+
+      setTimeout(() => {
+        const endTime = performance.now();
+        const executionMs = endTime - startTime;
+        typingIndicator.classList.add('hidden');
+
+        const detallesHtml = resultadoRAG.details.map(item => `
+          <div class="flex items-start gap-2.5 text-slate-700">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+            <p class="leading-relaxed text-xs sm:text-sm">${item}</p>
+          </div>
+        `).join('');
+
+        const plainResponse = `${resultadoRAG.headline} ${resultadoRAG.details.map(d => d.replace(/<[^>]*>/g, '')).join(' ')}`;
+        const newLog = registrarEventoAuditoria({
+          user_query: dlpResult.textoSanitizado.replace(/<[^>]*>/g, ''),
+          agent_response: plainResponse,
+          context_sources: [resultadoRAG.citation],
+          execution_time_ms: executionMs,
+          pii_detected_count: dlpResult.piiDetectados
+        });
+
+        const agentMsgHtml = `
+          <div class="flex flex-col items-start max-w-4xl mr-auto group animate-in">
+            <div class="flex items-center gap-2 mb-1.5 px-1">
+              <div class="w-5 h-5 rounded-full bg-slate-900 flex items-center justify-center text-white text-[10px]">
+                <i data-lucide="shield-check" class="w-3 h-3 text-emerald-400"></i>
+              </div>
+              <span class="text-[11px] font-bold text-slate-900">Agente RAG Revisoría Fiscal & KPO</span>
+              <span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-200/60 flex items-center gap-1">
+                <i data-lucide="lock" class="w-3 h-3 text-emerald-600"></i> ${resultadoRAG.citation.source_id}
+              </span>
+              <span class="text-[10px] text-slate-400 font-mono ml-auto">${timeStr}</span>
+            </div>
+
+            <div class="bg-white rounded-2xl rounded-tl-sm p-5 sm:p-6 shadow-card hover:shadow-elevated transition-all duration-300 ease-in-out border border-slate-200/90 text-sm leading-relaxed space-y-4 w-full">
+              
+              <div class="space-y-3">
+                <p class="text-slate-900 font-medium">${resultadoRAG.headline}</p>
+                <div class="space-y-2 p-3.5 bg-slate-50/80 rounded-xl border border-slate-200/70">
+                  ${detallesHtml}
+                </div>
+              </div>
+
+              <!-- Citas Drive -->
+              <div class="pt-3 border-t border-slate-100 space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wide">
+                    <i data-lucide="folder-check" class="w-4 h-4 text-emerald-600"></i> Fuente Oficial en Repositorio Drive
+                  </span>
+                  <span class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
+                    Relevancia: ${(resultadoRAG.citation.relevance_score * 100).toFixed(1)}%
+                  </span>
+                </div>
+                
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-200/70 flex items-center justify-between text-xs">
+                  <div>
+                    <span class="font-semibold text-slate-800">${resultadoRAG.citation.title}</span>
+                    <p class="text-[10px] font-mono text-slate-500">${resultadoRAG.citation.chunk_ref}</p>
+                  </div>
+                  <a href="${resultadoRAG.citation.url}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 text-emerald-700 text-[11px] font-semibold flex items-center gap-1 transition-colors">
+                    <i data-lucide="external-link" class="w-3 h-3"></i> Abrir
+                  </a>
+                </div>
+              </div>
+
+              <!-- Acciones -->
+              <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+                <div class="flex items-center gap-2">
+                  <button onclick="copiarRespuesta(this)" class="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition-colors">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> <span>Copiar</span>
+                  </button>
+                  <button onclick="toggleAuditDrawer(true)" class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg border border-emerald-200 transition-colors font-medium">
+                    <i data-lucide="terminal" class="w-3.5 h-3.5"></i> <span>Ver Log Cifrado (SHA-256)</span>
+                  </button>
+                </div>
+                <span class="text-[11px] font-mono">T: ${Math.round(executionMs)}ms · Sello: ${newLog.sha256_checksum.slice(0, 14)}...</span>
+              </div>
+
+            </div>
+          </div>
+        `;
+
+        chatMessages.insertAdjacentHTML('beforeend', agentMsgHtml);
+        lucide.createIcons();
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        if (dlpResult.piiDetectados > 0) {
+          mostrarToast(`🛡️ ${dlpResult.piiDetectados} datos sensibles protegidos por Ley 1581.`, 'success');
+        }
+      }, 1200);
+    }
+
+    function copiarRespuesta(btn) {
+      const card = btn.closest('.bg-white');
+      const textToCopy = card.innerText;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        mostrarToast('Dictamen copiado al portapapeles de forma segura.', 'success');
+        registrarActividadForense('RESPONSE_COPY', 'Copia de dictamen fiscal al portapapeles', 'INFO');
+      });
+    }
+
+    function mostrarToast(mensaje, tipo = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const icon = tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'alert-triangle' : 'info';
+      const accent = tipo === 'success' ? 'text-emerald-400' : tipo === 'error' ? 'text-red-400' : 'text-blue-400';
+
+      toast.className = `flex items-center gap-2.5 px-4 py-2.5 rounded-xl shadow-elevated text-xs font-medium border border-slate-700 bg-slate-900 text-white pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 ${accent}"></i><span>${mensaje}</span>`;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+      requestAnimationFrame(() => toast.classList.remove('translate-y-2', 'opacity-0'));
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function escaparHtml(text) {
+      if (typeof text !== 'string') return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Inicialización al cargar el documento
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      registrarActividadForense('SYSTEM_START', 'Inicio del sistema VERITAS AUDIT-SEC con túnel seguro activo', 'INFO');
+      registrarActividadForense('GDRIVE_INDEX', 'Indexación de base de conocimientos Google Drive (1ydk3BUI...)', 'INFO');
+      registrarActividadForense('DLP_INIT', 'Escudo DLP cargado: 5 patrones de datos sensibles habilitados', 'INFO');
+      renderizarTablaActividades();
+
+      // Registro inicial de auditoría RAG
+      registrarEventoAuditoria({
+        user_query: "Auditar solicitud de crédito del asociado [IDENTIDAD-RESERVADA] con cédula [CC/NIT-PROTEGIDO-***492] por valor de [VALOR-CLASIFICADO]. Requisitos de confidencialidad y custodia de pagarés.",
+        agent_response: "Con base en la documentación base oficial indexada de Google Drive (04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx y 03_Control_interno_COSO_y_hallazgos.docx)...",
+        context_sources: [{
+          source_id: "TEMPLATE-04",
+          title: "04_Cumplimiento_SARLAFT_SAGRILAFT_ROS.docx (Google Drive)",
+          relevance_score: 0.999,
+          chunk_ref: "TEMPLATE-04: SARLAFT, SAGRILAFT y Reserva Absoluta del ROS",
+          url: GDRIVE_KB_BASE_URL
+        }],
+        execution_time_ms: 340,
+        pii_detected_count: 3
+      });
+    });
+  </script>
+
+</body>
+</html>

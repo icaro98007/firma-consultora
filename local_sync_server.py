@@ -112,6 +112,57 @@ class SyncHandler(BaseHTTPRequestHandler):
                     self.wfile.write(f.read())
                 return
 
+        # Si entra a /api/import o /import, leer directamente la tabla de Google Sheets
+        if self.path in ['/api/import', '/import', '/api/inventario']:
+            month_title = get_current_month_title()
+            sheet_id = get_or_create_monthly_sheet(month_title)
+            print(f"\n[IMPORT] Leyendo inventario desde Google Sheet '{month_title}' ({sheet_id})...")
+            
+            ok, out, err = run_cmd(["readonly", "read", sheet_id, "Inventario!A2:H100"])
+            products = []
+            emoji_map = {
+                "Alimento": "🥣",
+                "Salud": "💊",
+                "Juguetes": "🪀",
+                "Higiene": "🧼",
+                "Accesorios": "🎀"
+            }
+            if ok and out.strip():
+                for line in out.strip().split("\n"):
+                    parts = line.split("\t")
+                    if len(parts) >= 2 and parts[0].strip():
+                        id_str = parts[0].strip()
+                        id_val = int(id_str) if id_str.isdigit() else len(products) + 1
+                        name = parts[1].strip()
+                        cat = parts[2].strip() if len(parts) > 2 else "Alimento"
+                        price = float(parts[3].replace(",", "").replace("$", "").strip()) if len(parts) > 3 and parts[3].strip() else 0
+                        stock = int(parts[4].strip()) if len(parts) > 4 and parts[4].strip().isdigit() else 0
+                        min_s = int(parts[5].strip()) if len(parts) > 5 and parts[5].strip().isdigit() else 2
+                        url = parts[7].strip() if len(parts) > 7 else ""
+                        products.append({
+                            "id": id_val,
+                            "name": name,
+                            "category": cat,
+                            "price": price,
+                            "stock": stock,
+                            "minStock": min_s,
+                            "imageUrl": url,
+                            "emoji": emoji_map.get(cat, "🐾")
+                        })
+                print(f" -> Importados exitosamente {len(products)} productos desde Google Sheets.")
+
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                "status": "success",
+                "month": month_title,
+                "sheetId": sheet_id,
+                "products": products
+            }, ensure_ascii=False).encode('utf-8'))
+            return
+
         # Si entra a /status o /api/status, retornar estado JSON
         month_title = get_current_month_title()
         sheet_id = get_or_create_monthly_sheet(month_title)
